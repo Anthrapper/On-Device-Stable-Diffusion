@@ -1,0 +1,82 @@
+name: Release Workflow
+
+on:
+  push:
+    tags:
+      - 'v*' 
+
+jobs:
+  build:
+    name: Build Flutter APK
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.13.0' 
+
+    - name: Install dependencies
+      run: flutter pub get
+
+    - name: Build Universal APK
+      run: flutter build apk --release
+
+    - name: Build Split ABI APKs
+      run: flutter build apk --split-per-abi --release
+
+    - name: Create GitHub Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.MY_PAT }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        body: |
+          Release ${{ github.ref }}
+        draft: false
+        prerelease: false
+
+    - name: Upload UNIVERSAL APK to Release
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.MY_PAT }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: build/app/outputs/flutter-apk/app-release.apk
+        asset_name: app-release.apk
+        asset_content_type: application/vnd.android.package-archive
+
+    - name: Upload APK to Release
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.MY_PAT }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+        asset_name: app-arm64-v8a-release.apk
+        asset_content_type: application/vnd.android.package-archive
+
+    - name: Upload APK to Release
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.MY_PAT }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+        asset_name: app-armeabi-v7a-release.apk
+        asset_content_type: application/vnd.android.package-archive
+
+    - name: Upload APK to Release
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.MY_PAT }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: build/app/outputs/flutter-apk/app-x86_64-release.apk
+        asset_name: app-x86_64-release.apk
+        asset_content_type: application/vnd.android.package-archive
